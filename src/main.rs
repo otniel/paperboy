@@ -1,5 +1,5 @@
-use paperboy::run;
 use std::net::TcpListener;
+use paperboy::startup::run;
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
