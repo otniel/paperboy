@@ -1,6 +1,4 @@
-use chrono::Local;
 use secrecy::{ExposeSecret, Secret};
-use std::iter::Product;
 
 #[derive(serde::Deserialize)]
 pub struct Settings {
