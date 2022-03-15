@@ -16,8 +16,7 @@ async fn main() -> std::io::Result<()> {
 
     let listener = TcpListener::bind(addr)?;
 
-    let db_pool = PgPool::connect_lazy(&config.database.connection_string())
-        .expect("Failed to connect to Postgres");
+    let db_pool = PgPool::connect_lazy_with(config.database.with_db());
 
     run(listener, db_pool)?.await
 }
