@@ -9,6 +9,8 @@ use paperboy::telemetry::{get_subscriber, init_subscriber};
 
 // Ensure that the `tracing` stack is only initialised once using `once_cell`
 use once_cell::sync::Lazy;
+use paperboy::email_client::EmailClient;
+
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
     let subscriber_name = "test".to_string();
@@ -111,7 +113,19 @@ async fn spawn_app() -> TestApp {
 
     let db_pool = configure_db(&config.database).await;
 
-    let server = run(listener, db_pool.clone()).expect("Failed to bind address.");
+    let sender = config
+        .email_client
+        .sender()
+        .expect("Invalid sender email address");
+    let timeout = config.email_client.timeout();
+    let email_client = EmailClient::new(
+        config.email_client.base_url,
+        sender,
+        config.email_client.authorization_token,
+        timeout,
+    );
+
+    let server = run(listener, db_pool.clone(), email_client).expect("Failed to bind address.");
     let _ = tokio::spawn(server);
 
     TestApp { address, db_pool }
