@@ -12,6 +12,7 @@ struct SendEmailRequest<'a> {
     text_body: &'a str,
 }
 
+#[derive(Debug)]
 pub struct EmailClient {
     http_client: Client,
     sender: SubscriberEmail,
