@@ -1,10 +1,12 @@
-use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
-use crate::email_client::EmailClient;
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
+use reqwest::Error;
 use sqlx::PgPool;
 use unicode_segmentation::UnicodeSegmentation;
 use uuid::Uuid;
+
+use crate::domain::{NewSubscriber, SubscriberEmail, SubscriberName};
+use crate::email_client::EmailClient;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -43,19 +45,33 @@ pub async fn subscribe(
         return HttpResponse::InternalServerError().finish();
     }
 
-    if email_client
-        .send_email(
-            new_subscriber.email,
-            "Welcome!",
-            "Welcome to newsletter!",
-            "Welcome to newsletter!",
-        )
+    if send_email_conformation(&email_client, new_subscriber)
         .await
         .is_err()
     {
         return HttpResponse::InternalServerError().finish();
     }
     HttpResponse::Ok().finish()
+}
+
+async fn send_email_conformation(
+    email_client: &EmailClient,
+    new_subscriber: NewSubscriber,
+) -> Result<(), Error> {
+    let confirmation_link = "https://my-api.com/subscriptions/confirm";
+    let html_body = &format!(
+        "Welcome to our newsletter!<br />\
+                Click <a href=\"{}\">here</a> to confirm your subscription.",
+        confirmation_link
+    );
+    let text_body = &format!(
+        "Welcome to our newsletter!\nVisit {} to confirm your subscription.",
+        confirmation_link
+    );
+    let result = email_client
+        .send_email(new_subscriber.email, "Welcome!", html_body, text_body)
+        .await;
+    result
 }
 
 pub fn is_valid_name(s: &str) -> bool {
@@ -77,7 +93,7 @@ pub async fn insert_subscriber(
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
-        INSERT INTO subscriptions (id, email, name, subscribed_at, status) VALUES ($1, $2, $3, $4, 'confirmed')
+        INSERT INTO subscriptions (id, email, name, subscribed_at, status) VALUES ($1, $2, $3, $4, 'pending_confirmation')
         "#,
         Uuid::new_v4(),
         new_subscriber.email.as_ref(),
