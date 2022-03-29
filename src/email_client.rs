@@ -2,7 +2,7 @@ use crate::domain::SubscriberEmail;
 use reqwest::{Client, Url};
 use secrecy::{ExposeSecret, Secret};
 
-#[derive(serde::Serialize)]
+#[derive(Debug, serde::Serialize)]
 #[serde(rename_all = "PascalCase")]
 struct SendEmailRequest<'a> {
     from: &'a str,
@@ -54,6 +54,9 @@ impl EmailClient {
             html_body,
             text_body,
         };
+        tracing::info!("Sending request body: {:?}", &request_body);
+        tracing::info!("Token: {:?}", &self.authorization_token.expose_secret());
+
         self.http_client
             .post(url)
             .header(
