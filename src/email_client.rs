@@ -54,10 +54,11 @@ impl EmailClient {
             html_body,
             text_body,
         };
-        tracing::info!("Sending request body: {:?}", &request_body);
-        tracing::info!("Token: {:?}", &self.authorization_token.expose_secret());
+        tracing::info!("____Sending request body: {:?}", &request_body);
+        tracing::info!("____Token: {}", &self.authorization_token.expose_secret());
 
-        self.http_client
+        let response = self
+            .http_client
             .post(url)
             .header(
                 "X-Postmark-Server-Token",
@@ -65,8 +66,9 @@ impl EmailClient {
             )
             .json(&request_body)
             .send()
-            .await?
-            .error_for_status()?;
+            .await?;
+        tracing::info!("____Response: {:?}", &response);
+        response.error_for_status()?;
         Ok(())
     }
 }
